@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title></title>
+</head>
+
+<body onload="main()">
+  <canvas id="glcanvas" width="400" height="400">
+    你的浏览器似乎不支持或者禁用了 HTML5 <code>&lt;canvas&gt;</code> 元素。
+  </canvas>
+  <script type="text/javascript" src="./lib/webgl-utils.js"></script>
+  <script type="text/javascript" src="./lib/webgl-debug.js"></script>
+  <script type="text/javascript" src="./lib/cuon-utils.js"></script>
+  <script type="text/javascript">
+
+    const initVertexBuffers = (gl) => {
+      const verticesSizes = new Float32Array([
+        -0.5, 0.5, 0, 1,
+        -0.5, -0.5, 0, 0,
+        0.5, 0.5, 1, 1,
+        0.5, -0.5, 1, 0,
+      ]);
+      const n = 4;
+      // 创建缓冲区对象
+      const vertexBuffer = gl.createBuffer();
+      if (!vertexBuffer) {
+        console.log('failed to create buffer');
+        return -1;
+      }
+      // 绑定缓冲区对象
+      gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+      // 向缓冲区写入数据
+      gl.bufferData(gl.ARRAY_BUFFER, verticesSizes, gl.STATIC_DRAW);
+
+      const FSIZE = verticesSizes.BYTES_PER_ELEMENT;
+
+      const a_Position = gl.getAttribLocation(gl.program, 'a_Position');
+      if (a_Position < 0) {
+        console.log('failed to get the storage location of a_Position');
+        return -1;
+      }
+      // 将缓冲区对象分配给a_Position
+      gl.vertexAttribPointer(a_Position, 2, gl.FLOAT, false, FSIZE * 4, 0);
+      // 连接变量与缓冲区对象
+      gl.enableVertexAttribArray(a_Position);
+
+      // gl.bindBuffer(gl.ARRAY_BUFFER, sizeBuffer);
+      // gl.bufferData(gl.ARRAY_BUFFER, sizes, gl.STATIC_DRAW);
+      const a_TexCoord = gl.getAttribLocation(gl.program, 'a_TexCoord');
+      if (a_TexCoord < 0) {
+        console.log('failed to get the storage location of a_TexCoord');
+        return -1;
+      }
+      // 将缓冲区对象分配给a_TexCoord
+      gl.vertexAttribPointer(a_TexCoord, 2, gl.FLOAT, false, FSIZE * 4, FSIZE * 2);
+      // 连接变量与缓冲区对象
+      gl.enableVertexAttribArray(a_TexCoord);
+
+
+      return n;
+    };
+
+    const initTextures = (gl, n) => {
+      const texture = gl.createTexture(); // 创建纹理对象
+      if (!texture) {
+        console.log('Failed to create the texture object');
+        return false;
+      }
+
+      // 获取u_Sampler的存储位置
+      const u_Sampler = gl.getUniformLocation(gl.program, 'u_Sampler');
+      if (!u_Sampler) {
+        console.log('Failed to get the storage location of u_Sampler');
+        return false;
+      }
+      const image = new Image();
+      if (!image) {
+        console.log('Failed to create the image object');
+        return false;
+      }
+
+      image.onload = () => {
+        loadTexture(gl, n ,texture, u_Sampler, image);
+      }
+      image.src = './resource/sky.jpg';
+
+      return true;
+    };
+
+    const loadTexture = (gl, n ,texture, u_Sampler, image) => {
+      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1); // 对纹理图像y轴反转
+      // 开启0号纹理单元
+      gl.activeTexture(gl.TEXTURE0);
+      // 向target绑定纹理对象
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+
+      // 配置纹理参数
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      // 配置纹理图像
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
+
+      // 将0号纹理传递给着色器
+      gl.uniform1i(u_Sampler, 0);
+
+      // 用上面指定的颜色清除缓冲区
+      gl.clear(gl.COLOR_BUFFER_BIT);
+
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, n);
+    };
+
+    function main() {
+      const canvas = document.querySelector("#glcanvas");
+      // 初始化 WebGL 上下文
+      const gl = getWebGLContext(canvas);
+
+      const vshaderSource = `
+      attribute vec4 a_Position;
+      attribute vec2 a_TexCoord;
+      varying vec2 v_TexCoord;
+      void main() {
+        gl_Position = a_Position;
+        v_TexCoord = a_TexCoord;
+      }
+      `;
+
+      const fsSource = `
+      precision mediump float;
+      uniform sampler2D u_Sampler;
+      varying vec2 v_TexCoord;
+      void main() {
+        gl_FragColor = texture2D(u_Sampler, v_TexCoord);
+      }
+      `;
+
+      // 确认 WebGL 支持性
+      if (!gl) {
+        alert("无法初始化 WebGL，你的浏览器、操作系统或硬件等可能不支持 WebGL。");
+        return;
+      }
+
+      if (!initShaders(gl, vshaderSource, fsSource)) {
+        console.log('failed to initialize shaders');
+        return;
+      }
+
+      const n = initVertexBuffers(gl);
+      if (n < 0) {
+        console.log('failed to set positions');
+        return;
+      }
+
+      // 使用完全不透明的黑色清除所有图像
+      gl.clearColor(0.0, 0.0, 0.0, 1.0);
+
+      // 配置纹理
+      if (!initTextures(gl, n)) {
+        console.log('failed to set initTextures');
+        return;
+      }
+    }
+  </script>
+</body>
+
+</html>
+
+</html>

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title></title>
+</head>
+
+<body onload="main()">
+  <canvas id="glcanvas" width="400" height="480">
+    你的浏览器似乎不支持或者禁用了 HTML5 <code>&lt;canvas&gt;</code> 元素。
+  </canvas>
+  <script type="text/javascript" src="https://rodger.global-linguist.com/webgl/lib/webgl-utils.js"></script>
+  <script type="text/javascript" src="https://rodger.global-linguist.com/webgl/lib/webgl-debug.js"></script>
+  <script type="text/javascript" src="https://rodger.global-linguist.com/webgl/lib/cuon-utils.js"></script>
+  <script type="text/javascript">
+
+    const transitPosition = (mouseX, mouseY, rect, canvasWidth, canvasHeight) => {
+      const x = mouseX - rect.left - canvasWidth / 2;
+      const y = canvasHeight / 2 - (mouseY - rect.top);
+      return [x / (canvasWidth / 2), y / (canvasHeight / 2)];
+    }
+
+    function main() {
+      const canvas = document.querySelector("#glcanvas");
+      // 初始化 WebGL 上下文
+      const gl = getWebGLContext(canvas);
+
+      const vshaderSource = `
+      attribute vec4 a_Position;
+      void main() {
+        gl_Position = a_Position;
+        gl_PointSize = 10.0;
+      }
+      `;
+
+      const fsSource = `
+      precision mediump float;
+      uniform vec4 u_FragColor;
+      void main() {
+        gl_FragColor = u_FragColor;
+      }
+      `;
+
+      // 确认 WebGL 支持性
+      if (!gl) {
+        alert("无法初始化 WebGL，你的浏览器、操作系统或硬件等可能不支持 WebGL。");
+        return;
+      }
+
+      if (!initShaders(gl, vshaderSource, fsSource)) {
+        console.log('failed to initialize shaders');
+        return;
+      }
+
+      const a_Position = gl.getAttribLocation(gl.program, 'a_Position');
+      if (a_Position < 0) {
+        console.log('failed to get the storage location of a_Position');
+        return;
+      }
+
+      const u_FragColor = gl.getUniformLocation(gl.program, 'u_FragColor');
+      if (u_FragColor < 0) {
+        console.log('failed to get u_FragColor ');
+        return;
+      }
+
+      const gPoints = [];
+      const gColors = [];
+
+      canvas.addEventListener('click', (ev) => {
+        const x = ev.clientX;
+        const y = ev.clientY;
+        const rect = ev.target.getBoundingClientRect();
+
+        gPoints.push(transitPosition(x, y, rect, canvas.width, canvas.height));
+        if (x >= 0 && y >= 0) {
+          gColors.push([1.0, 0.0, 0.0, 1.0]);
+        } else {
+          gColors.push([0.0, 1.0, 0.0, 1.0]);
+        }
+
+        gl.clear(gl.COLOR_BUFFER_BIT);
+
+        for (let i = 0; i < gPoints.length; i++) {
+          // 将顶点位置传输给attribute 变量
+          gl.vertexAttrib2f(a_Position, gPoints[i][0], gPoints[i][1]);
+          gl.uniform4f(u_FragColor, gColors[i][0], gColors[i][1], gColors[i][2], 1);
+          gl.drawArrays(gl.POINTS, 0, 1);
+        }
+      });
+
+
+
+      // 使用完全不透明的黑色清除所有图像
+      gl.clearColor(0.0, 0.0, 0.0, 1.0);
+      // 用上面指定的颜色清除缓冲区
+      gl.clear(gl.COLOR_BUFFER_BIT);
+
+
+    }
+  </script>
+</body>
+
+</html>
+
+</html>

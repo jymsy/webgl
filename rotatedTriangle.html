@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title></title>
+</head>
+
+<body onload="main()">
+  <canvas id="glcanvas" width="400" height="480">
+    你的浏览器似乎不支持或者禁用了 HTML5 <code>&lt;canvas&gt;</code> 元素。
+  </canvas>
+  <script type="text/javascript" src="./lib/webgl-utils.js"></script>
+  <script type="text/javascript" src="./lib/webgl-debug.js"></script>
+  <script type="text/javascript" src="./lib/cuon-utils.js"></script>
+  <script type="text/javascript">
+
+    const initVertexBuffers = (gl) => {
+      const vertices = new Float32Array([0.0, 0.5, -0.5, -0.5, 0.5, -0.5]);
+      const n = 3;
+      // 创建缓冲区对象
+      const vertexBuffer = gl.createBuffer();
+      if (!vertexBuffer) {
+        console.log('failed to create buffer');
+        return -1;
+      }
+      // 绑定缓冲区对象
+      gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+      // 向缓冲区写入数据
+      gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+
+      const a_Position = gl.getAttribLocation(gl.program, 'a_Position');
+      if (a_Position < 0) {
+        console.log('failed to get the storage location of a_Position');
+        return -1;
+      }
+      // 将缓冲区对象分配给a_Position
+      gl.vertexAttribPointer(a_Position, 2, gl.FLOAT, false, 0, 0);
+      // 连接变量与缓冲区对象
+      gl.enableVertexAttribArray(a_Position);
+      return n;
+    };
+
+    function main() {
+      const canvas = document.querySelector("#glcanvas");
+      // 初始化 WebGL 上下文
+      const gl = getWebGLContext(canvas);
+
+      const vshaderSource = `
+      attribute vec4 a_Position;
+      uniform mat4 u_xformMatrix;
+      uniform mat4 u_xformMatrix1;
+      void main() {
+        gl_Position = u_xformMatrix1 * u_xformMatrix * a_Position;
+      }
+      `;
+
+      const fsSource = `
+      void main() {
+        gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+      }
+      `;
+
+      const angle = 90;
+      const radian = Math.PI * angle / 180; //转为弧度制
+      const cosb = Math.cos(radian);
+      const sinb = Math.sin(radian);
+
+      const sx = 1, sy = 1.5, sz = 1;
+
+      const xformMatrix = new Float32Array([
+        cosb, sinb, 0, 0,
+        -sinb, cosb, 0, 0,
+        0, 0, 1, 0,
+        0, 0, 0, 1
+      ]);
+
+      const xformMatrixTrans = new Float32Array([
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+        0.5, 0.5, 0, 1
+      ]);
+
+      const xformMatrixScale = new Float32Array([
+        sx, 0, 0, 0,
+        0, sy, 0, 0,
+        0, 0, sz, 0,
+        0, 0, 0, 1
+      ]);
+
+      // 确认 WebGL 支持性
+      if (!gl) {
+        alert("无法初始化 WebGL，你的浏览器、操作系统或硬件等可能不支持 WebGL。");
+        return;
+      }
+
+      if (!initShaders(gl, vshaderSource, fsSource)) {
+        console.log('failed to initialize shaders');
+        return;
+      }
+
+      const n = initVertexBuffers(gl);
+      if (n < 0) {
+        console.log('failed to set positions');
+        return;
+      }
+
+      // const u_Cosb = gl.getUniformLocation(gl.program, 'u_Cosb');
+      // const u_Sinb = gl.getUniformLocation(gl.program, 'u_Sinb');
+      const u_xformMatrix = gl.getUniformLocation(gl.program, 'u_xformMatrix');
+      const u_xformMatrix1 = gl.getUniformLocation(gl.program, 'u_xformMatrix1');
+      gl.uniformMatrix4fv(u_xformMatrix, false, xformMatrix);
+      gl.uniformMatrix4fv(u_xformMatrix1, false, xformMatrixTrans);
+
+      // gl.uniform1f(u_Cosb, cosb);
+      // gl.uniform1f(u_Sinb, sinb);
+
+      // 使用完全不透明的黑色清除所有图像
+      gl.clearColor(0.0, 0.0, 0.0, 1.0);
+      // 用上面指定的颜色清除缓冲区
+      gl.clear(gl.COLOR_BUFFER_BIT);
+
+      gl.drawArrays(gl.TRIANGLES, 0, n);
+    }
+  </script>
+</body>
+
+</html>
+
+</html>
