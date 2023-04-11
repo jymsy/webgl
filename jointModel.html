@@ -90,6 +90,38 @@
       return indices.length;
     };
 
+    const g_modelMatrix = new Matrix4(), g_mvpMatrix = new Matrix4(), g_normalMatrix = new Matrix4();
+    let g_arm1Angle = 90.0;
+    let g_joint1Angle = 0.0;
+
+    const drawBox = (gl, n, viewProjMatrix, u_MvpMatrix, u_NormalMatrix) => {
+      // 计算模型视图矩阵并传给mvp变量
+      g_mvpMatrix.set(viewProjMatrix);
+      g_mvpMatrix.multiply(g_modelMatrix);
+      gl.uniformMatrix4fv(u_MvpMatrix, false, g_mvpMatrix.elements);
+
+      // 计算法线变换矩阵并传给normal变量
+      g_normalMatrix.setInverseOf(g_modelMatrix);
+      g_normalMatrix.transpose();
+      gl.uniformMatrix4fv(u_NormalMatrix, false, g_normalMatrix.elements);
+
+      gl.drawElements(gl.TRIANGLES, n, gl.UNSIGNED_BYTE, 0)
+    };
+
+    const draw = (gl, n, viewProjMatrix, u_MvpMatrix, u_NormalMatrix) => {
+      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+      const arm1Length = 10;
+      g_modelMatrix.setTranslate(0.0, -12.0, 0.0);
+      g_modelMatrix.rotate(g_arm1Angle, 0.0, 1.0, 0.0);
+      drawBox(gl, n, viewProjMatrix, u_MvpMatrix, u_NormalMatrix);
+
+      // arm2
+      g_modelMatrix.translate(0.0, arm1Length, 0.0);
+      g_modelMatrix.rotate(g_joint1Angle, 0.0, 0.0, 1.0);
+      drawBox(gl, n, viewProjMatrix, u_MvpMatrix, u_NormalMatrix);
+    }
+
     function main() {
       const canvas = document.querySelector("#glcanvas");
       // 初始化 WebGL 上下文
@@ -112,7 +144,7 @@
       `;
 
       const fsSource = `
-      #ifdef GL_ESs
+      #ifdef GL_ES
       precision mediump float;
       #endif
       varying vec4 v_Color;
@@ -139,19 +171,17 @@
       }
 
       const u_MvpMatrix = gl.getUniformLocation(gl.program, 'u_MvpMatrix');
-      const u_NormalMatrix = gl.getUniformLocation(gl.program, 'u_NormalMatrix ');
+      const u_NormalMatrix = gl.getUniformLocation(gl.program, 'u_NormalMatrix');
       if (!u_MvpMatrix || !u_NormalMatrix) {
         console.log('Failed to get the storage locations of u_MvpMatrix');
         return;
       }
 
       const viewProjMatrix = new Matrix4();
-      mvpMatrix.setPerspective(50.0, canvas.width / canvas.height, 1.0, 100.0);
-      mvpMatrix.lookAt(20.0, 10.0, 30.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
+      viewProjMatrix.setPerspective(50.0, canvas.width / canvas.height, 1.0, 100.0);
+      viewProjMatrix.lookAt(20.0, 10.0, 30.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
 
       const ANGLE_STEP = 3;
-      let g_arm1Angle = 90;
-      let g_joint1Angle = 0;
 
       document.addEventListener("keydown", (event) => {
         switch (event.keyCode) {
@@ -173,31 +203,14 @@
             break;
           default: return;
         }
+        draw(gl, n, viewProjMatrix, u_MvpMatrix, u_NormalMatrix);
       });
 
-      draw(gl, n, viewProjMatrix, u_MvpMatrix, u_NormalMatrix);
-
-      // 设置光线颜色
-      gl.uniform3f(u_LightColor, 1, 1, 1);
-      // 设置光线方向
-      const lightDirection = new Vector3([0.5, 3, 4]);
-      lightDirection.normalize();// 归一化
-      gl.uniform3fv(u_LightDirection, lightDirection.elements);
-      const mvpMatrix = new Matrix4();
 
       // 使用完全不透明的黑色清除所有图像
       gl.clearColor(0.0, 0.0, 0.0, 1.0);
       // 开启隐藏面消除
       gl.enable(gl.DEPTH_TEST);
-
-
-      // 将视图矩阵
-      gl.uniformMatrix4fv(u_MvpMatrix, false, mvpMatrix.elements);
-
-      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-      gl.drawElements(gl.TRIANGLES, n, gl.UNSIGNED_BYTE, 0);
-
     }
   </script>
 </body>
