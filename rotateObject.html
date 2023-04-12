@@ -42,22 +42,30 @@
     }
 
     const initVertexBuffers = (gl) => {
+      // Create a cube
+      //    v6----- v5
+      //   /|      /|
+      //  v1------v0|
+      //  | |     | |
+      //  | |v7---|-|v4
+      //  |/      |/
+      //  v2------v3
       const vertices = new Float32Array([
-        0.5, 1.0, 0.5, -0.5, 1.0, 0.5, -0.5, 0.0, 0.5, 0.5, 0.0, 0.5, // v0-v1-v2-v3 front
-        0.5, 1.0, 0.5, 0.5, 0.0, 0.5, 0.5, 0.0, -0.5, 0.5, 1.0, -0.5, // v0-v3-v4-v5 right
-        0.5, 1.0, 0.5, 0.5, 1.0, -0.5, -0.5, 1.0, -0.5, -0.5, 1.0, 0.5, // v0-v5-v6-v1 up
-        -0.5, 1.0, 0.5, -0.5, 1.0, -0.5, -0.5, 0.0, -0.5, -0.5, 0.0, 0.5, // v1-v6-v7-v2 left
-        -0.5, 0.0, -0.5, 0.5, 0.0, -0.5, 0.5, 0.0, 0.5, -0.5, 0.0, 0.5, // v7-v4-v3-v2 down
-        0.5, 0.0, -0.5, -0.5, 0.0, -0.5, -0.5, 1.0, -0.5, 0.5, 1.0, -0.5  // v4-v7-v6-v5 back
+        1.0, 1.0, 1.0, -1.0, 1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0,    // v0-v1-v2-v3 front
+        1.0, 1.0, 1.0, 1.0, -1.0, 1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0,    // v0-v3-v4-v5 right
+        1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, 1.0,    // v0-v5-v6-v1 up
+        -1.0, 1.0, 1.0, -1.0, 1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 1.0,    // v1-v6-v7-v2 left
+        -1.0, -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, -1.0, 1.0, -1.0, -1.0, 1.0,    // v7-v4-v3-v2 down
+        1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 1.0, -1.0, 1.0, 1.0, -1.0     // v4-v7-v6-v5 back
       ]);
 
-      const normals = new Float32Array([    // Normal
-        0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, // v0-v1-v2-v3 front
-        1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, // v0-v3-v4-v5 right
-        0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, // v0-v5-v6-v1 up
-        -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, // v1-v6-v7-v2 left
-        0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, // v7-v4-v3-v2 down
-        0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0  // v4-v7-v6-v5 back
+      var texCoords = new Float32Array([   // Texture coordinates
+        1.0, 1.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0,    // v0-v1-v2-v3 front
+        0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 1.0, 1.0,    // v0-v3-v4-v5 right
+        1.0, 0.0, 1.0, 1.0, 0.0, 1.0, 0.0, 0.0,    // v0-v5-v6-v1 up
+        1.0, 1.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0,    // v1-v6-v7-v2 left
+        0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0,    // v7-v4-v3-v2 down
+        0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0     // v4-v7-v6-v5 back
       ]);
       // 顶点索引
       const indices = new Uint8Array([       // Indices of the vertices
@@ -79,7 +87,7 @@
         return -1;
       }
 
-      if (!initArrayBuffer(gl, normals, 3, gl.FLOAT, 'a_Normal')) {
+      if (!initArrayBuffer(gl, texCoords, 2, gl.FLOAT, 'a_TexCoord')) {
         return -1;
       }
 
@@ -89,76 +97,90 @@
       return indices.length;
     };
 
-    const g_matrixStack = [];
-    const pushMatrix = (m) => {
-      g_matrixStack.push(new Matrix4(m));
+    const initEventHandlers = (canvas, currentAngle) => {
+      let dragging = false;
+      let lastX = -1, lastY = -1; // mouse last position
+
+      canvas.onmousedown = (ev) => {
+        const x = ev.clientX, y = ev.clientY;
+
+        const rect = ev.target.getBoundingClientRect();
+        if (rect.left <= x && x < rect.right && rect.top <= y && y < rect.bottom) {
+          lastX = x;
+          lastY = y;
+          dragging = true;
+        }
+      }
+
+      canvas.onmouseup = () => {
+        dragging = false;
+      }
+
+      canvas.onmousemove = (ev) => {
+        const x = ev.clientX, y = ev.clientY;
+        if (dragging) {
+          const factor = 100 / canvas.height; // 旋转因子
+          const dx = factor * (x - lastX);
+          const dy = factor * (y - lastY);
+          // 将 沿y轴旋转的角度控制在-90-90度
+          currentAngle[0] = Math.max(Math.min(currentAngle[0] + dy, 90), -90);
+          currentAngle[1] = currentAngle[1] + dx;
+        }
+        lastX = x;
+        lastY = y;
+      }
     };
 
-    const popMatrix = () => g_matrixStack.pop();
+    const loadTexture = (gl, texture, u_Sampler, image) => {
+      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1);  // Flip the image Y coordinate
+      // Activate texture unit0
+      gl.activeTexture(gl.TEXTURE0);
+      // Bind the texture object to the target
+      gl.bindTexture(gl.TEXTURE_2D, texture);
 
-    let g_modelMatrix = new Matrix4(), g_mvpMatrix = new Matrix4(), g_normalMatrix = new Matrix4();
-    let g_arm1Angle = 90.0;
-    let g_joint1Angle = 45.0;
-    let g_joint2Angle = 0.0;
-    let g_joint3Angle = 0.0;
+      // Set texture parameters
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      // Set the image to texture
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
 
-    const drawBox = (gl, n, width, height, depth, viewProjMatrix, u_MvpMatrix, u_NormalMatrix) => {
-      pushMatrix(g_modelMatrix);
-
-      // 缩放立方体并绘制
-      g_modelMatrix.scale(width, height, depth);
-      // 计算模型视图矩阵并传给mvp变量
-      g_mvpMatrix.set(viewProjMatrix);
-      g_mvpMatrix.multiply(g_modelMatrix);
-      gl.uniformMatrix4fv(u_MvpMatrix, false, g_mvpMatrix.elements);
-
-      // 计算法线变换矩阵并传给normal变量
-      g_normalMatrix.setInverseOf(g_modelMatrix);
-      g_normalMatrix.transpose();
-      gl.uniformMatrix4fv(u_NormalMatrix, false, g_normalMatrix.elements);
-
-      gl.drawElements(gl.TRIANGLES, n, gl.UNSIGNED_BYTE, 0);
-      g_modelMatrix = popMatrix();
-    };
-
-    const draw = (gl, n, viewProjMatrix, u_MvpMatrix, u_NormalMatrix) => {
-      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-      const baseHeight = 2;
-      g_modelMatrix.setTranslate(0.0, -12.0, 0.0);
-      drawBox(gl, n, 10, baseHeight, 10, viewProjMatrix, u_MvpMatrix, u_NormalMatrix);
-
-      const arm1Length = 10;
-      g_modelMatrix.translate(0.0, baseHeight, 0.0);
-      g_modelMatrix.rotate(g_arm1Angle, 0.0, 1.0, 0.0);
-      drawBox(gl, n, 3, arm1Length, 3, viewProjMatrix, u_MvpMatrix, u_NormalMatrix);
-
-      // arm2
-      const arm2Length = 10;
-      g_modelMatrix.translate(0.0, arm1Length, 0.0);
-      g_modelMatrix.rotate(g_joint1Angle, 0.0, 0.0, 1.0);
-      drawBox(gl, n, 4, arm2Length, 4, viewProjMatrix, u_MvpMatrix, u_NormalMatrix);
-
-      // A palm
-      const palmLength = 2.0;
-      g_modelMatrix.translate(0.0, arm2Length, 0.0);       // Move to palm
-      g_modelMatrix.rotate(g_joint2Angle, 0.0, 1.0, 0.0);  // Rotate around the y-axis
-      drawBox(gl, n, 2.0, palmLength, 6.0, viewProjMatrix, u_MvpMatrix, u_NormalMatrix);
-
-      g_modelMatrix.translate(0, palmLength, 0);
-
-      // finger 1
-      pushMatrix(g_modelMatrix);
-      g_modelMatrix.translate(0.0, 0, 2.0);
-      g_modelMatrix.rotate(g_joint3Angle, 1.0, 0.0, 0.0);
-      drawBox(gl, n, 1.0, 2, 1.0, viewProjMatrix, u_MvpMatrix, u_NormalMatrix);
-      g_modelMatrix = popMatrix();
-
-      // finger 2
-      g_modelMatrix.translate(0.0, 0, -2.0);
-      g_modelMatrix.rotate(-g_joint3Angle, 1.0, 0.0, 0.0);
-      drawBox(gl, n, 1.0, 2, 1.0, viewProjMatrix, u_MvpMatrix, u_NormalMatrix);
+      // Pass the texure unit 0 to u_Sampler
+      gl.uniform1i(u_Sampler, 0);
     }
+
+    const initTextures = (gl) => {
+      const texture = gl.createTexture();
+      if (!texture) {
+        console.log('Failed to create the texture object');
+        return false;
+      }
+      // Get the storage location of u_Sampler
+      const u_Sampler = gl.getUniformLocation(gl.program, 'u_Sampler');
+      if (!u_Sampler) {
+        console.log('Failed to get the storage location of u_Sampler');
+        return false;
+      }
+
+      const image = new Image();
+      if (!image) {
+        console.log('Failed to create the image object');
+        return false;
+      }
+      image.onload = () => { loadTexture(gl, texture, u_Sampler, image); };
+      image.src = './resource/sky.jpg';
+
+      return true;
+    }
+
+    var g_MvpMatrix = new Matrix4();
+    const draw = (gl, n, viewProjMatrix, u_MvpMatrix, currentAngle) => {
+      g_MvpMatrix.set(viewProjMatrix);
+      g_MvpMatrix.rotate(currentAngle[0], 1.0, 0.0, 0.0); // Rotation around x-axis
+      g_MvpMatrix.rotate(currentAngle[1], 0.0, 1.0, 0.0); // Rotation around y-axis
+      gl.uniformMatrix4fv(u_MvpMatrix, false, g_MvpMatrix.elements);
+
+      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);     // Clear buffers
+      gl.drawElements(gl.TRIANGLES, n, gl.UNSIGNED_BYTE, 0);   // Draw the cube
+    };
 
     function main() {
       const canvas = document.querySelector("#glcanvas");
@@ -167,17 +189,12 @@
 
       const vshaderSource = `
       attribute vec4 a_Position;
-      attribute vec4 a_Normal;
+      attribute vec2 a_TexCoord;
       uniform mat4 u_MvpMatrix;
-      uniform mat4 u_NormalMatrix;
-      varying vec4 v_Color;
+      varying vec2 v_TexCoord;
       void main() {
         gl_Position = u_MvpMatrix * a_Position;
-        vec3 lightDirection = normalize(vec3(0.0, 0.5, 0.7));
-        vec4 color = vec4(1.0, 0.4, 0.0, 1.0);
-        vec3 normal = normalize((u_NormalMatrix * a_Normal).xyz);
-        float nDotL = max(dot(normal, lightDirection), 0.0);
-        v_Color = vec4(color.rgb * nDotL + vec3(0.1), color.a);
+        v_TexCoord = a_TexCoord;
       }
       `;
 
@@ -185,9 +202,10 @@
       #ifdef GL_ES
       precision mediump float;
       #endif
-      varying vec4 v_Color;
+      uniform sampler2D u_Sampler;
+      varying vec2 v_TexCoord;
       void main() {
-        gl_FragColor = v_Color;
+        gl_FragColor = texture2D(u_Sampler, v_TexCoord);;
       }
       `;
 
@@ -209,64 +227,33 @@
       }
 
       const u_MvpMatrix = gl.getUniformLocation(gl.program, 'u_MvpMatrix');
-      const u_NormalMatrix = gl.getUniformLocation(gl.program, 'u_NormalMatrix');
-      if (!u_MvpMatrix || !u_NormalMatrix) {
+      if (!u_MvpMatrix) {
         console.log('Failed to get the storage locations of u_MvpMatrix');
         return;
       }
 
       const viewProjMatrix = new Matrix4();
-      viewProjMatrix.setPerspective(50.0, canvas.width / canvas.height, 1.0, 100.0);
-      viewProjMatrix.lookAt(20.0, 10.0, 30.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
+      viewProjMatrix.setPerspective(30.0, canvas.width / canvas.height, 1.0, 100.0);
+      viewProjMatrix.lookAt(3.0, 3.0, 7.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
 
-      const ANGLE_STEP = 3;
+      var currentAngle = [0.0, 0.0]; // Current rotation angle ([x-axis, y-axis] degrees)
+      initEventHandlers(canvas, currentAngle);
 
-      document.addEventListener("keydown", (event) => {
-        switch (event.keyCode) {
-          case 38: // 上 z轴正向转动
-            if (g_joint1Angle < 135) {
-              g_joint1Angle += ANGLE_STEP;
-            }
-            break;
-          case 40: // 下 z轴负向转动
-            if (g_joint1Angle > -135) {
-              g_joint1Angle -= ANGLE_STEP;
-            }
-            break;
-          case 39: // 右 y轴正向转动
-            g_arm1Angle = (g_arm1Angle + ANGLE_STEP) % 360;
-            break;
-          case 37: // zuo y轴负向转动
-            g_arm1Angle = (g_arm1Angle - ANGLE_STEP) % 360;
-            break;
-          case 90: // z 
-            g_joint2Angle = (g_joint2Angle + ANGLE_STEP) % 360;
-            break;
-          case 88: // x 
-            g_joint2Angle = (g_joint2Angle - ANGLE_STEP) % 360;
-            break;
-          case 86: // v 
-            if (g_joint3Angle < 60) {
-              g_joint3Angle = (g_joint3Angle + ANGLE_STEP) % 360;
-            }
-            break;
-          case 67: // c
-            if (g_joint3Angle > -60) {
-              g_joint3Angle = (g_joint3Angle - ANGLE_STEP) % 360;
-            }
-            break;
-          default: return;
-        }
-        draw(gl, n, viewProjMatrix, u_MvpMatrix, u_NormalMatrix);
-      });
-
+      if (!initTextures(gl)) {
+        console.log('Failed to intialize the texture.');
+        return;
+      }
 
       // 使用完全不透明的黑色清除所有图像
       gl.clearColor(0.0, 0.0, 0.0, 1.0);
       // 开启隐藏面消除
       gl.enable(gl.DEPTH_TEST);
 
-      draw(gl, n, viewProjMatrix, u_MvpMatrix, u_NormalMatrix);
+      const tick = () => {
+        draw(gl, n, viewProjMatrix, u_MvpMatrix, currentAngle);
+        requestAnimationFrame(tick, canvas);
+      }
+      tick();
     }
   </script>
 </body>
