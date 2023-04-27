@@ -11,9 +11,6 @@
   <canvas id="glcanvas" width="400" height="400" style="position: absolute; z-index: 0;">
     你的浏览器似乎不支持或者禁用了 HTML5 <code>&lt;canvas&gt;</code> 元素。
   </canvas>
-  <canvas id="hud" width="400" height="400" style="position: absolute; z-index: 1;">
-    你的浏览器似乎不支持或者禁用了 HTML5 <code>&lt;canvas&gt;</code> 元素。
-  </canvas>
   <script type="text/javascript" src="./lib/webgl-utils.js"></script>
   <script type="text/javascript" src="./lib/webgl-debug.js"></script>
   <script type="text/javascript" src="./lib/cuon-utils.js"></script>
@@ -62,14 +59,14 @@
         1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 1.0, -1.0, 1.0, 1.0, -1.0     // v4-v7-v6-v5 back
       ]);
 
-      var colors = new Float32Array([   // Colors
-        0.2, 0.58, 0.82, 0.2, 0.58, 0.82, 0.2, 0.58, 0.82, 0.2, 0.58, 0.82, // v0-v1-v2-v3 front
-        0.5, 0.41, 0.69, 0.5, 0.41, 0.69, 0.5, 0.41, 0.69, 0.5, 0.41, 0.69,  // v0-v3-v4-v5 right
-        0.0, 0.32, 0.61, 0.0, 0.32, 0.61, 0.0, 0.32, 0.61, 0.0, 0.32, 0.61,  // v0-v5-v6-v1 up
-        0.78, 0.69, 0.84, 0.78, 0.69, 0.84, 0.78, 0.69, 0.84, 0.78, 0.69, 0.84, // v1-v6-v7-v2 left
-        0.32, 0.18, 0.56, 0.32, 0.18, 0.56, 0.32, 0.18, 0.56, 0.32, 0.18, 0.56, // v7-v4-v3-v2 down
-        0.73, 0.82, 0.93, 0.73, 0.82, 0.93, 0.73, 0.82, 0.93, 0.73, 0.82, 0.93, // v4-v7-v6-v5 back
-      ]);
+      var colors = new Float32Array([     // Colors
+    0.4, 0.4, 1.0,  0.4, 0.4, 1.0,  0.4, 0.4, 1.0,  0.4, 0.4, 1.0,  // v0-v1-v2-v3 front
+    0.4, 1.0, 0.4,  0.4, 1.0, 0.4,  0.4, 1.0, 0.4,  0.4, 1.0, 0.4,  // v0-v3-v4-v5 right
+    1.0, 0.4, 0.4,  1.0, 0.4, 0.4,  1.0, 0.4, 0.4,  1.0, 0.4, 0.4,  // v0-v5-v6-v1 up
+    1.0, 1.0, 0.4,  1.0, 1.0, 0.4,  1.0, 1.0, 0.4,  1.0, 1.0, 0.4,  // v1-v6-v7-v2 left
+    1.0, 1.0, 1.0,  1.0, 1.0, 1.0,  1.0, 1.0, 1.0,  1.0, 1.0, 1.0,  // v7-v4-v3-v2 down
+    0.4, 1.0, 1.0,  0.4, 1.0, 1.0,  0.4, 1.0, 1.0,  0.4, 1.0, 1.0   // v4-v7-v6-v5 back
+  ]);
 
       // 顶点索引
       const indices = new Uint8Array([       // Indices of the vertices
@@ -101,52 +98,41 @@
       return indices.length;
     };
 
-    var g_MvpMatrix = new Matrix4();
-    const draw = (gl, n, viewProjMatrix, u_MvpMatrix) => {
-      g_MvpMatrix.set(viewProjMatrix);
-      gl.uniformMatrix4fv(u_MvpMatrix, false, g_MvpMatrix.elements);
-
-      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);     // Clear buffers
-      gl.drawElements(gl.TRIANGLES, n, gl.UNSIGNED_BYTE, 0);   // Draw the cube
-    };
-
-    const check = (gl, n, x, y, u_Clicked, viewProjMatrix, u_MvpMatrix) => {
-      let picked = false;
-      gl.uniform1i(u_Clicked, 1); // red
-      draw(gl, n, viewProjMatrix, u_MvpMatrix);
-
-      // 读取点击位置像素颜色
-      const pixels = new Uint8Array(4);
-      gl.readPixels(x, y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
-      if (pixels[0] === 255) {
-        picked = true;
+    function keydown(ev, gl, n, u_FogDist, fogDist) {
+      switch (ev.keyCode) {
+        case 38: // Up arrow key -> Increase the maximum distance of fog
+          fogDist[1] += 1;
+          break;
+        case 40: // Down arrow key -> Decrease the maximum distance of fog
+          if (fogDist[1] > fogDist[0]) fogDist[1] -= 1;
+          break;
+        default: return;
       }
-
-      gl.uniform1i(u_Clicked, 0);
-      draw(gl, n, viewProjMatrix, u_MvpMatrix);
-      return picked;
+      gl.uniform2fv(u_FogDist, fogDist);   // Pass the distance of fog
+      // Clear color and depth buffer
+      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+      // Draw
+      gl.drawElements(gl.TRIANGLES, n, gl.UNSIGNED_BYTE, 0);
     }
 
     function main() {
       const canvas = document.querySelector("#glcanvas");
-      const hud = document.querySelector("#hud");
       // 初始化 WebGL 上下文
       const gl = getWebGLContext(canvas);
-      const ctx = hud.getContext('2d');
 
       const vshaderSource = `
       attribute vec4 a_Position;
       attribute vec4 a_Color;
       uniform mat4 u_MvpMatrix;
-      uniform bool u_Clicked;
+      uniform mat4 u_ModelMatrix;
+      uniform vec4 u_Eye;
       varying vec4 v_Color;
+      varying float v_Dist;
       void main() {
         gl_Position = u_MvpMatrix * a_Position;
-        if (u_Clicked) {
-          v_Color = vec4(1, 0, 0, 1);
-        } else {
-          v_Color = a_Color;
-        }
+        v_Color = a_Color;
+        // 计算顶点与视点的距离
+        v_Dist = distance(u_ModelMatrix * a_Position, u_Eye);
       }
       `;
 
@@ -154,9 +140,15 @@
       #ifdef GL_ES
       precision mediump float;
       #endif
+      uniform vec3 u_FogColor;
+      uniform vec2 u_FogDist; // 雾化的起点和终点
       varying vec4 v_Color;
+      varying float v_Dist;
       void main() {
-        gl_FragColor = v_Color;
+        // 计算雾化因子
+        float fogFactor = clamp(( u_FogDist.y - v_Dist) / (u_FogDist.y - u_FogDist.x), 0.0, 1.0);
+        vec3 color = mix(u_FogColor, vec3(v_Color), fogFactor);
+        gl_FragColor = vec4(color, v_Color.a);
       }
       `;
 
@@ -177,41 +169,50 @@
         return;
       }
 
+      // Color of Fog
+      var fogColor = new Float32Array([0.137, 0.231, 0.423]);
+      // Distance of fog [where fog starts, where fog completely covers object]
+      var fogDist = new Float32Array([55, 80]);
+      // Position of eye point (world coordinates)
+      var eye = new Float32Array([25, 65, 35, 1]);
+
       const u_MvpMatrix = gl.getUniformLocation(gl.program, 'u_MvpMatrix');
-      const u_Clicked = gl.getUniformLocation(gl.program, 'u_Clicked');
-      if (!u_MvpMatrix || !u_Clicked) {
+      const u_ModelMatrix = gl.getUniformLocation(gl.program, 'u_ModelMatrix');
+      var u_Eye = gl.getUniformLocation(gl.program, 'u_Eye');
+      var u_FogColor = gl.getUniformLocation(gl.program, 'u_FogColor');
+      var u_FogDist = gl.getUniformLocation(gl.program, 'u_FogDist');
+      if (!u_MvpMatrix || !u_ModelMatrix) {
         console.log('Failed to get the storage locations of u_MvpMatrix');
         return;
       }
 
-      const viewProjMatrix = new Matrix4();
-      viewProjMatrix.setPerspective(30.0, canvas.width / canvas.height, 1.0, 100.0);
-      viewProjMatrix.lookAt(0.0, 0.0, 7.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
+      gl.uniform3fv(u_FogColor, fogColor); // Colors
+      gl.uniform2fv(u_FogDist, fogDist);   // Starting point and end point
+      gl.uniform4fv(u_Eye, eye);           // Eye point
 
-      gl.uniform1i(u_Clicked, 0);
+      var modelMatrix = new Matrix4();
+      modelMatrix.setScale(10, 10, 10);
+      gl.uniformMatrix4fv(u_ModelMatrix, false, modelMatrix.elements);
 
-      hud.onmousedown = (ev) => {
-        const x = ev.clientX, y = ev.clientY;
-        const rect = ev.target.getBoundingClientRect();
-        console.log(rect, x, y);
-        if (rect.left <= x && x < rect.right && rect.top <= y && y < rect.bottom) {
-          // 检测是否在物体上
-          const x_in_canvas = x - rect.left, y_in_canvas = rect.bottom - y;
-          const picked = check(gl, n, x_in_canvas, y_in_canvas, u_Clicked, viewProjMatrix, u_MvpMatrix);
-          if (picked) alert('The cube was selected! ');
-        }
-      }
+      // Pass the model view projection matrix to u_MvpMatrix
+      var mvpMatrix = new Matrix4();
+      mvpMatrix.setPerspective(30, canvas.width / canvas.height, 1, 1000);
+      mvpMatrix.lookAt(eye[0], eye[1], eye[2], 0, 2, 0, 0, 1, 0);
+      mvpMatrix.multiply(modelMatrix);
+      gl.uniformMatrix4fv(u_MvpMatrix, false, mvpMatrix.elements);
+      document.onkeydown = function (ev) { keydown(ev, gl, n, u_FogDist, fogDist); };
+
+
 
       // 使用完全不透明的黑色清除所有图像
-      gl.clearColor(0.0, 0.0, 0.0, 1.0);
+      gl.clearColor(fogColor[0], fogColor[1], fogColor[2], 1.0);
       // 开启隐藏面消除
       gl.enable(gl.DEPTH_TEST);
 
-      const tick = () => {
-        draw(gl, n, viewProjMatrix, u_MvpMatrix);
-        requestAnimationFrame(tick);
-      }
-      tick();
+      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+      // Draw
+      gl.drawElements(gl.TRIANGLES, n, gl.UNSIGNED_BYTE, 0);
+
     }
   </script>
 </body>
