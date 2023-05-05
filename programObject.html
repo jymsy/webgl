@@ -14,6 +14,7 @@
   <script type="text/javascript" src="./lib/webgl-utils.js"></script>
   <script type="text/javascript" src="./lib/webgl-debug.js"></script>
   <script type="text/javascript" src="./lib/cuon-utils.js"></script>
+  <script type="text/javascript" src="./lib/cuon-matrix.js"></script>
   <script type="text/javascript">
 
     function initArrayBufferForLaterUse(gl, data, num, type) {
@@ -123,14 +124,14 @@
       }
 
       image.onload = () => {
-        loadTexture(gl, n, texture, u_Sampler, image);
+        loadTexture(gl, program, texture, image);
       }
       image.src = './resource/sky.jpg';
 
       return texture;
     };
 
-    const loadTexture = (gl, program, texture, u_Sampler, image) => {
+    const loadTexture = (gl, program, texture, image) => {
       gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1); // 对纹理图像y轴反转
       // 开启0号纹理单元
       gl.activeTexture(gl.TEXTURE0);
@@ -144,7 +145,7 @@
 
       // 将0号纹理传递给着色器
       gl.useProgram(program);
-      gl.uniform1i(u_Sampler, 0);
+      gl.uniform1i(program.u_Sampler, 0);
 
       gl.bindTexture(gl.TEXTURE_2D, null); // Unbind texture
     };
@@ -159,6 +160,13 @@
       // Update the current rotation angle (adjusted by the elapsed time)
       var newAngle = angle + (ANGLE_STEP * elapsed) / 1000.0;
       return newAngle % 360;
+    }
+
+    // Assign the buffer objects and enable the assignment
+    function initAttributeVariable(gl, a_attribute, buffer) {
+      gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+      gl.vertexAttribPointer(a_attribute, buffer.num, buffer.type, false, 0, 0);
+      gl.enableVertexAttribArray(a_attribute);
     }
 
     var g_modelMatrix = new Matrix4();
